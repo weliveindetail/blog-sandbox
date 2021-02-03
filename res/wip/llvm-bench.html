@@ -5,22 +5,46 @@
 	<title>LLVM Bench</title>
 	<script src="Chart.js-2.9.4/Chart.min.js"></script>
 	<style>
-	canvas {
-		-moz-user-select: none;
-		-webkit-user-select: none;
-		-ms-user-select: none;
-	}
+		div.chartjs {
+			margin: 2rem;
+			padding: 1rem;
+			box-shadow: 0.25rem 0.25rem 1rem #aaa;
+		}
+		canvas.chartjs {
+			-moz-user-select: none;
+			-webkit-user-select: none;
+			-ms-user-select: none;
+		}
 	</style>
 </head>
 
 <body>
-	<canvas id="canvas"></canvas>
+	<div class="chartjs">
+		<canvas class="chartjs"></canvas>
+	</div>
 	<script>
+		Chart.controllers.lineOffsetLeft = Chart.controllers.line.extend({
+				updateElement: function(point, index, reset) {
+						Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
+						const meta = this.getMeta();
+						const xScale = this.getScaleForId(meta.xAxisID);
+						point._model.x = xScale.getPixelForValue(undefined, index-0.2);
+				},
+		});
+		Chart.controllers.lineOffsetRight = Chart.controllers.line.extend({
+				updateElement: function(point, index, reset) {
+						Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
+						const meta = this.getMeta();
+						const xScale = this.getScaleForId(meta.xAxisID);
+						point._model.x = xScale.getPixelForValue(undefined, index+0.2);
+				},
+		});
+
 		window.colors = {
 			red: 'rgba(255, 99, 132, 1.0)',
 			orange: 'rgba(255, 159, 64, 1.0)',
 			yellow: 'rgba(255, 205, 86, 1.0)',
-			green: 'rgba(75, 192, 192, 1.0)',
+			green: 'rgba(75, 192, 104, 1.0)',
 			blue: 'rgba(54, 162, 235, 1.0)',
 			purple: 'rgba(153, 102, 255, 1.0)',
 			grey: 'rgba(201, 203, 207, 1.0)',
@@ -78,11 +102,11 @@
 			[ "14m18s", "17m44s", "20m35s", "23m36s", "27m37s", "32m39s", "37m11s", "45m38s", "51m11s" ].map(timeStrToSeconds),
 		];
 
-		var testAvgRuntimes = zip(testRuntimes).map(vals => sum(vals) / vals.length);
+		var testAvgRuntimes = zip(testRuntimes).map(vals => Math.round(sum(vals) / vals.length));
 		var testAvgPreptimes = zip([
 			zip([testRuntimesTotal[0], testRuntimes[0]]).map(pair => pair[0] - pair[1]),
 			zip([testRuntimesTotal[1], testRuntimes[1]]).map(pair => pair[0] - pair[1]),
-		]).map(vals => sum(vals) / vals.length);
+		]).map(vals => Math.round(sum(vals) / vals.length));
 
 		var buildTimes = buildAndTestRuntimesTotal[0].map((total, i) => {
 			return total - testRuntimes[2][i] - testAvgPreptimes[i]
@@ -90,29 +114,31 @@
 
 		var barChartData = {
 			labels: [
-				'LLVM 4 (2017)', 'LLVM 5 (2017)',
-				'LLVM 6 (2018)', 'LLVM 7 (2018)',
-				'LLVM 8 (2019)', 'LLVM 9 (2019)',
-				'LLVM 10 (2020)', 'LLVM 11 (2020)',
-				'LLVM 12 (2021)',
+				['LLVM 4', ' 2017'], ['LLVM 5', ' 2017'],
+				['LLVM 6', ' 2018'], ['LLVM 7', ' 2018'],
+				['LLVM 8', ' 2019'], ['LLVM 9', ' 2019'],
+				['LLVM 10', ' 2020'], ['LLVM 11', ' 2020'],
+				['LLVM 12', ' 2021'],
 			],
 			datasets: [
 				{
 					label: 'ninja targets',
-					borderColor: window.colors.red,
-					backgroundColor: alpha(window.colors.red, 0.25),
+					borderColor: window.colors.orange,
+					backgroundColor: alpha(window.colors.orange, 0.25),
 					borderWidth: 0,
-					yAxisID: 'y-axis-red',
+					yAxisID: 'y-axis-orange',
 					data: [ 2287, 2479, 2592, 2802, 2861, 3008, 3166, 3348, 3456 ],
 				},
 				{
 					label: 'ninja runtime',
-					borderColor: window.colors.red,
-					backgroundColor: alpha(window.colors.grey, 0),
-					borderWidth: 2,
+					borderColor: window.colors.orange,
+					backgroundColor: window.colors.orange,
+					borderWidth: 1,
 					yAxisID: 'y-axis-seconds',
 					data: buildTimes,
-					type: 'line',
+					type: 'lineOffsetLeft',
+					steppedLine: true,
+					fill: false,
 				},
 				{
 					label: 'lit tests',
@@ -125,34 +151,18 @@
 				{
 					label: 'lit runtime',
 					borderColor: window.colors.green,
-					backgroundColor: alpha(window.colors.grey, 0),
-					borderWidth: 2,
+					backgroundColor: window.colors.green,
+					borderWidth: 1,
 					yAxisID: 'y-axis-seconds',
 					data: testAvgRuntimes,
-					type: 'line',
+					type: 'lineOffsetRight',
+					steppedLine: true,
+					fill: false,
 				},
-				//{
-				//	label: 'cmake runtime',
-				//	borderColor: window.colors.green,
-				//	backgroundColor: alpha(window.colors.grey, 0),
-				//	borderWidth: 2,
-				//	yAxisID: 'y-axis-green',
-				//	data: [ 17, 17, 18, 18, 22, 23, 25, 26, 25 ],
-				//	type: 'line',
-				//},
-				//{
-				//	label: '',
-				//	borderColor: window.colors.green,
-				//	backgroundColor: alpha(window.colors.grey, 0),
-				//	borderWidth: 2,
-				//	yAxisID: 'y-axis-green',
-				//	data: [  ],
-				//	type: 'line',
-				//},
 			]
 		};
 		window.onload = function() {
-			var ctx = document.getElementById('canvas').getContext('2d');
+			var ctx = document.querySelector('canvas.chartjs').getContext('2d');
 			window.myBar = new Chart(ctx, {
 				type: 'bar',
 				data: barChartData,
@@ -176,20 +186,20 @@
 								type: 'linear',
 								display: true,
 								position: 'right',
-								id: 'y-axis-red',
+								id: 'y-axis-orange',
 								scaleLabel: {
 									display: true,
 									labelString: 'ninja targets',
-									fontColor: alpha(window.colors.red, 0.75),
+									fontColor: alpha(window.colors.orange, 0.75),
 								},
 								ticks: {
 									min: 1500,
 									max: 4500,
-									fontColor: alpha(window.colors.red, 0.75),
+									fontColor: alpha(window.colors.orange, 0.75),
 								},
 								gridLines: {
 									drawOnChartArea: false,
-									color: alpha(window.colors.red, 0.33),
+									color: alpha(window.colors.orange, 0.33),
 								}
 							},
 							{
