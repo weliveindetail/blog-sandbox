@@ -2,253 +2,253 @@
 <html>
 
 <head>
-	<title>LLVM Bench</title>
-	<script src="Chart.js-2.9.4/Chart.min.js"></script>
-	<style>
-		div.chartjs {
-			margin: 2rem;
-			padding: 1rem;
-			box-shadow: 0.25rem 0.25rem 1rem #aaa;
-		}
-		canvas.chartjs {
-			-moz-user-select: none;
-			-webkit-user-select: none;
-			-ms-user-select: none;
-		}
-	</style>
+  <title>LLVM Bench</title>
+  <script src="Chart.js-2.9.4/Chart.min.js"></script>
+  <style>
+    div.chartjs {
+      margin: 2rem;
+      padding: 1rem;
+      box-shadow: 0.25rem 0.25rem 1rem #aaa;
+    }
+    canvas.chartjs {
+      -moz-user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+    }
+  </style>
 </head>
 
 <body>
-	<div class="chartjs">
-		<canvas class="chartjs"></canvas>
-	</div>
-	<script>
-		Chart.controllers.lineOffsetLeft = Chart.controllers.line.extend({
-				updateElement: function(point, index, reset) {
-						Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
-						const meta = this.getMeta();
-						const xScale = this.getScaleForId(meta.xAxisID);
-						point._model.x = xScale.getPixelForValue(undefined, index-0.2);
-				},
-		});
-		Chart.controllers.lineOffsetRight = Chart.controllers.line.extend({
-				updateElement: function(point, index, reset) {
-						Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
-						const meta = this.getMeta();
-						const xScale = this.getScaleForId(meta.xAxisID);
-						point._model.x = xScale.getPixelForValue(undefined, index+0.2);
-				},
-		});
+  <div class="chartjs">
+    <canvas class="chartjs"></canvas>
+  </div>
+  <script>
+    Chart.controllers.lineOffsetLeft = Chart.controllers.line.extend({
+        updateElement: function(point, index, reset) {
+            Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
+            const meta = this.getMeta();
+            const xScale = this.getScaleForId(meta.xAxisID);
+            point._model.x = xScale.getPixelForValue(undefined, index-0.2);
+        },
+    });
+    Chart.controllers.lineOffsetRight = Chart.controllers.line.extend({
+        updateElement: function(point, index, reset) {
+            Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
+            const meta = this.getMeta();
+            const xScale = this.getScaleForId(meta.xAxisID);
+            point._model.x = xScale.getPixelForValue(undefined, index+0.2);
+        },
+    });
 
-		window.colors = {
-			red: 'rgba(255, 99, 132, 1.0)',
-			orange: 'rgba(255, 159, 64, 1.0)',
-			yellow: 'rgba(255, 205, 86, 1.0)',
-			green: 'rgba(75, 192, 104, 1.0)',
-			blue: 'rgba(54, 162, 235, 1.0)',
-			purple: 'rgba(153, 102, 255, 1.0)',
-			grey: 'rgba(201, 203, 207, 1.0)',
-		};
+    window.colors = {
+      red: 'rgba(255, 99, 132, 1.0)',
+      orange: 'rgba(255, 159, 64, 1.0)',
+      yellow: 'rgba(255, 205, 86, 1.0)',
+      green: 'rgba(75, 192, 104, 1.0)',
+      blue: 'rgba(54, 162, 235, 1.0)',
+      purple: 'rgba(153, 102, 255, 1.0)',
+      grey: 'rgba(201, 203, 207, 1.0)',
+    };
 
-		function parseRGB(str) {
-			var vals;
-			if (str.startsWith("rgb")) {
-				vals = str.split(/[,\(\)]/)
-									.map(n => parseFloat(n))
-									.filter(n => !isNaN(n));
-			}
-			else {
-				console.error("Color encoding not implemented");
-				return [];
-			}
-			if (vals.length < 3)
-				console.warn(`Parsing RGB(A) string '${str}' gave: ${vals}`)
-			return vals;
-		}
+    function parseRGB(str) {
+      var vals;
+      if (str.startsWith("rgb")) {
+        vals = str.split(/[,\(\)]/)
+                  .map(n => parseFloat(n))
+                  .filter(n => !isNaN(n));
+      }
+      else {
+        console.error("Color encoding not implemented");
+        return [];
+      }
+      if (vals.length < 3)
+        console.warn(`Parsing RGB(A) string '${str}' gave: ${vals}`)
+      return vals;
+    }
 
-		function alpha(str, factor) {
-			var [r, g, b, a] = parseRGB(str);
-			var val = (a === undefined ? 1 : a) * (factor === undefined ? 0.5 : factor);
-			return `rgba(${r}, ${g}, ${b}, ${val})`;
-		}
+    function alpha(str, factor) {
+      var [r, g, b, a] = parseRGB(str);
+      var val = (a === undefined ? 1 : a) * (factor === undefined ? 0.5 : factor);
+      return `rgba(${r}, ${g}, ${b}, ${val})`;
+    }
 
-		function timeStrToSeconds(str) {
-			var arr = str.split(/[ms]+/).map(n => parseInt(n)).filter(n => !isNaN(n));
-			if (arr.length != 2)
-				console.warn(`Parsing time string '${str}' gave: ${arr}`)
-			return arr[0] * 60 + arr[1];
-		}
+    function timeStrToSeconds(str) {
+      var arr = str.split(/[ms]+/).map(n => parseInt(n)).filter(n => !isNaN(n));
+      if (arr.length != 2)
+        console.warn(`Parsing time string '${str}' gave: ${arr}`)
+      return arr[0] * 60 + arr[1];
+    }
 
-		function zip(arrays) {
-			return [...Array(arrays[0].length)].map((_, i) => {
-				return arrays.map(items => items[i]);
-			});
-		}
-		function sum(arr) {
-			return arr.reduce((sum, value) => sum + value, 0);
-		}
+    function zip(arrays) {
+      return [...Array(arrays[0].length)].map((_, i) => {
+        return arrays.map(items => items[i]);
+      });
+    }
+    function sum(arr) {
+      return arr.reduce((sum, value) => sum + value, 0);
+    }
 
-		var testRuntimes = [
-			[ 252, 361, 451, 530, 647, 820, 949, 1388, 1645 ],
-			[ 253, 361, 455, 533, 647, 824, 946, 1389, 1641 ],
-			[ 254, 361, 448, 530, 647, 813, 951, 1384, 1634 ], // Build & test
-		];
-		var testRuntimesTotal = [
-			[ "4m14s", "6m4s", "7m35s", "8m54s", "10m51s", "13m46s", "15m55s", "23m16s", "27m34s" ].map(timeStrToSeconds),
-			[ "4m15s", "6m4s", "7m38s", "8m58s", "10m52s", "13m49s", "15m52s", "23m15s", "27m27s" ].map(timeStrToSeconds),
-		];
+    var testRuntimes = [
+      [ 252, 361, 451, 530, 647, 820, 949, 1388, 1645 ],
+      [ 253, 361, 455, 533, 647, 824, 946, 1389, 1641 ],
+      [ 254, 361, 448, 530, 647, 813, 951, 1384, 1634 ], // Build & test
+    ];
+    var testRuntimesTotal = [
+      [ "4m14s", "6m4s", "7m35s", "8m54s", "10m51s", "13m46s", "15m55s", "23m16s", "27m34s" ].map(timeStrToSeconds),
+      [ "4m15s", "6m4s", "7m38s", "8m58s", "10m52s", "13m49s", "15m52s", "23m15s", "27m27s" ].map(timeStrToSeconds),
+    ];
 
-		var buildAndTestRuntimesTotal = [
-			[ "14m18s", "17m44s", "20m35s", "23m36s", "27m37s", "32m39s", "37m11s", "45m38s", "51m11s" ].map(timeStrToSeconds),
-		];
+    var buildAndTestRuntimesTotal = [
+      [ "14m18s", "17m44s", "20m35s", "23m36s", "27m37s", "32m39s", "37m11s", "45m38s", "51m11s" ].map(timeStrToSeconds),
+    ];
 
-		var testAvgRuntimes = zip(testRuntimes).map(vals => Math.round(sum(vals) / vals.length));
-		var testAvgPreptimes = zip([
-			zip([testRuntimesTotal[0], testRuntimes[0]]).map(pair => pair[0] - pair[1]),
-			zip([testRuntimesTotal[1], testRuntimes[1]]).map(pair => pair[0] - pair[1]),
-		]).map(vals => Math.round(sum(vals) / vals.length));
+    var testAvgRuntimes = zip(testRuntimes).map(vals => Math.round(sum(vals) / vals.length));
+    var testAvgPreptimes = zip([
+      zip([testRuntimesTotal[0], testRuntimes[0]]).map(pair => pair[0] - pair[1]),
+      zip([testRuntimesTotal[1], testRuntimes[1]]).map(pair => pair[0] - pair[1]),
+    ]).map(vals => Math.round(sum(vals) / vals.length));
 
-		var buildTimes = buildAndTestRuntimesTotal[0].map((total, i) => {
-			return total - testRuntimes[2][i] - testAvgPreptimes[i]
-		});
+    var buildTimes = buildAndTestRuntimesTotal[0].map((total, i) => {
+      return total - testRuntimes[2][i] - testAvgPreptimes[i]
+    });
 
-		var barChartData = {
-			labels: [
-				['LLVM 4', ' 2017'], ['LLVM 5', ' 2017'],
-				['LLVM 6', ' 2018'], ['LLVM 7', ' 2018'],
-				['LLVM 8', ' 2019'], ['LLVM 9', ' 2019'],
-				['LLVM 10', ' 2020'], ['LLVM 11', ' 2020'],
-				['LLVM 12', ' 2021'],
-			],
-			datasets: [
-				{
-					label: 'ninja targets',
-					borderColor: window.colors.orange,
-					backgroundColor: alpha(window.colors.orange, 0.25),
-					borderWidth: 0,
-					yAxisID: 'y-axis-orange',
-					data: [ 2287, 2479, 2592, 2802, 2861, 3008, 3166, 3348, 3456 ],
-				},
-				{
-					label: 'ninja runtime',
-					borderColor: window.colors.orange,
-					backgroundColor: window.colors.orange,
-					borderWidth: 1,
-					yAxisID: 'y-axis-seconds',
-					data: buildTimes,
-					type: 'lineOffsetLeft',
-					steppedLine: true,
-					fill: false,
-				},
-				{
-					label: 'lit tests',
-					borderColor: window.colors.green,
-					backgroundColor: alpha(window.colors.green, 0.25),
-					borderWidth: 0,
-					yAxisID: 'y-axis-green',
-					data: [ 18753 + 154, 20933 + 140, 22632 + 149, 26201 + 156, 28621 + 155, 32037 + 155, 34724 + 152, 37928 + 161, 41264 + 158 ],
-				},
-				{
-					label: 'lit runtime',
-					borderColor: window.colors.green,
-					backgroundColor: window.colors.green,
-					borderWidth: 1,
-					yAxisID: 'y-axis-seconds',
-					data: testAvgRuntimes,
-					type: 'lineOffsetRight',
-					steppedLine: true,
-					fill: false,
-				},
-			]
-		};
-		window.onload = function() {
-			var ctx = document.querySelector('canvas.chartjs').getContext('2d');
-			window.myBar = new Chart(ctx, {
-				type: 'bar',
-				data: barChartData,
-				options: {
-					responsive: true,
-      		legend: {
-						position: 'bottom',
-						usePointStyle: true
-					},
-					title: {
-						display: true,
-						text: 'check-llvm stats'
-					},
-					tooltips: {
-						mode: 'index',
-						intersect: true
-					},
-					scales: {
-						yAxes: [
-							{
-								type: 'linear',
-								display: true,
-								position: 'right',
-								id: 'y-axis-orange',
-								scaleLabel: {
-									display: true,
-									labelString: 'ninja targets',
-									fontColor: alpha(window.colors.orange, 0.75),
-								},
-								ticks: {
-									min: 1500,
-									max: 4500,
-									fontColor: alpha(window.colors.orange, 0.75),
-								},
-								gridLines: {
-									drawOnChartArea: false,
-									color: alpha(window.colors.orange, 0.33),
-								}
-							},
-							{
-								type: 'linear',
-								display: true,
-								position: 'right',
-								id: 'y-axis-green',
-								scaleLabel: {
-									display: true,
-									labelString: 'lit tests',
-									fontColor: alpha(window.colors.green, 0.75),
-								},
-								ticks: {
-									min: 15000,
-									max: 45000,
-									fontColor: alpha(window.colors.green, 0.75),
-								},
-								gridLines: {
-									drawOnChartArea: false,
-									color: alpha(window.colors.green, 0.33),
-								}
-							},
-							{
-								type: 'linear',
-								display: true,
-								position: 'left',
-								id: 'y-axis-seconds',
-								scaleLabel: {
-									display: true,
-									labelString: 'minutes',
-								},
-								ticks: {
-									min: 0,
-									max: 2100,
-									stepSize: 300,
-									callback: function(value, index, values) {
-										return value / 60;
-									}
-								},
-								gridLines: {
-									drawOnChartArea: true,
-								}
-							},
-						],
-					}
-				}
-			});
-		};
-	</script>
+    var barChartData = {
+      labels: [
+        ['LLVM 4', ' 2017'], ['LLVM 5', ' 2017'],
+        ['LLVM 6', ' 2018'], ['LLVM 7', ' 2018'],
+        ['LLVM 8', ' 2019'], ['LLVM 9', ' 2019'],
+        ['LLVM 10', ' 2020'], ['LLVM 11', ' 2020'],
+        ['LLVM 12', ' 2021'],
+      ],
+      datasets: [
+        {
+          label: 'ninja targets',
+          borderColor: window.colors.orange,
+          backgroundColor: alpha(window.colors.orange, 0.25),
+          borderWidth: 0,
+          yAxisID: 'y-axis-orange',
+          data: [ 2287, 2479, 2592, 2802, 2861, 3008, 3166, 3348, 3456 ],
+        },
+        {
+          label: 'ninja runtime',
+          borderColor: window.colors.orange,
+          backgroundColor: window.colors.orange,
+          borderWidth: 1,
+          yAxisID: 'y-axis-seconds',
+          data: buildTimes,
+          type: 'lineOffsetLeft',
+          steppedLine: true,
+          fill: false,
+        },
+        {
+          label: 'lit tests',
+          borderColor: window.colors.green,
+          backgroundColor: alpha(window.colors.green, 0.25),
+          borderWidth: 0,
+          yAxisID: 'y-axis-green',
+          data: [ 18753 + 154, 20933 + 140, 22632 + 149, 26201 + 156, 28621 + 155, 32037 + 155, 34724 + 152, 37928 + 161, 41264 + 158 ],
+        },
+        {
+          label: 'lit runtime',
+          borderColor: window.colors.green,
+          backgroundColor: window.colors.green,
+          borderWidth: 1,
+          yAxisID: 'y-axis-seconds',
+          data: testAvgRuntimes,
+          type: 'lineOffsetRight',
+          steppedLine: true,
+          fill: false,
+        },
+      ]
+    };
+    window.onload = function() {
+      var ctx = document.querySelector('canvas.chartjs').getContext('2d');
+      window.myBar = new Chart(ctx, {
+        type: 'bar',
+        data: barChartData,
+        options: {
+          responsive: true,
+          legend: {
+            position: 'bottom',
+            usePointStyle: true
+          },
+          title: {
+            display: true,
+            text: 'check-llvm stats'
+          },
+          tooltips: {
+            mode: 'index',
+            intersect: true
+          },
+          scales: {
+            yAxes: [
+              {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                id: 'y-axis-orange',
+                scaleLabel: {
+                  display: true,
+                  labelString: 'ninja targets',
+                  fontColor: alpha(window.colors.orange, 0.75),
+                },
+                ticks: {
+                  min: 1500,
+                  max: 4500,
+                  fontColor: alpha(window.colors.orange, 0.75),
+                },
+                gridLines: {
+                  drawOnChartArea: false,
+                  color: alpha(window.colors.orange, 0.33),
+                }
+              },
+              {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                id: 'y-axis-green',
+                scaleLabel: {
+                  display: true,
+                  labelString: 'lit tests',
+                  fontColor: alpha(window.colors.green, 0.75),
+                },
+                ticks: {
+                  min: 15000,
+                  max: 45000,
+                  fontColor: alpha(window.colors.green, 0.75),
+                },
+                gridLines: {
+                  drawOnChartArea: false,
+                  color: alpha(window.colors.green, 0.33),
+                }
+              },
+              {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                id: 'y-axis-seconds',
+                scaleLabel: {
+                  display: true,
+                  labelString: 'minutes',
+                },
+                ticks: {
+                  min: 0,
+                  max: 2100,
+                  stepSize: 300,
+                  callback: function(value, index, values) {
+                    return value / 60;
+                  }
+                },
+                gridLines: {
+                  drawOnChartArea: true,
+                }
+              },
+            ],
+          }
+        }
+      });
+    };
+  </script>
 </body>
 
 </html>
