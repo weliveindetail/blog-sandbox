@@ -15,12 +15,33 @@
       -webkit-user-select: none;
       -ms-user-select: none;
     }
+    div.chartjs-tooltip {
+      opacity: 1;
+      position: absolute;
+      background: rgba(0, 0, 0, .7);
+      color: white;
+      border-radius: 3px;
+      padding: 5px;
+      -webkit-transition: all .1s ease;
+      transition: all .1s ease;
+      pointer-events: none;
+      -webkit-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .chartjs-tooltip-key {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+    }
   </style>
 </head>
 
 <body>
   <div class="chartjs">
     <canvas class="chartjs"></canvas>
+    <div class="chartjs-tooltip" style="opacity: 0;"></div>
   </div>
   <script>
     Chart.controllers.lineOffsetLeft = Chart.controllers.line.extend({
@@ -88,6 +109,44 @@
       return arr.reduce((sum, value) => sum + value, 0);
     }
 
+    function renderTooltip(info) {
+      var line = function(reItems, reTime, suffix) {
+        var items;
+        var seconds;
+        var col;
+        for (var i = 0; i < info.body.length; i++) {
+          var matchItems = reItems.exec(info.body[i].lines);
+          if (matchItems) {
+            items = matchItems[1];
+            col = info.labelColors[i].borderColor;
+            continue;
+          }
+          var matchTime = reTime.exec(info.body[i].lines);
+          if (matchTime) {
+            seconds = matchTime[1];
+            continue;
+          }
+        }
+
+        // Some parts of the dataset may be hidden.
+        if (!seconds || !items)
+          return "";
+
+        var mins = Math.round(seconds / 60);
+        var kilos = Math.round(items / 100) / 10;
+        var prefix = `<span class="chartjs-tooltip-key" style="background: ${col}"></span>`;
+        return `<tr><td>${prefix} ${mins}min for ${kilos}k ${suffix}</td></tr>`;
+      }
+
+      return `<table>` +
+               `<thead><tr><th>${info.title}</th></tr></thead>` +
+               `<tbody>` +
+                 line(/ninja targets: ([0-9]+)/, /ninja runtime: ([0-9]+)/, 'build targets') +
+                 line(/lit tests: ([0-9]+)/, /lit runtime: ([0-9]+)/, 'tests') +
+               `</tbody>` +
+             `</table>`;
+    }
+
     var testRuntimes = [
       [ 252, 361, 451, 530, 647, 820, 949, 1388, 1645 ],
       [ 253, 361, 455, 533, 647, 824, 946, 1389, 1641 ],
@@ -137,7 +196,7 @@
           yAxisID: 'y-axis-seconds',
           data: buildTimes,
           type: 'lineOffsetLeft',
-          steppedLine: true,
+          steppedLine: false,
           fill: false,
         },
         {
@@ -152,18 +211,25 @@
           label: 'lit runtime',
           borderColor: window.colors.green,
           backgroundColor: window.colors.green,
-          borderWidth: 1,
+          borderWidth: 0,
           yAxisID: 'y-axis-seconds',
           data: testAvgRuntimes,
           type: 'lineOffsetRight',
-          steppedLine: true,
+          steppedLine: false,
           fill: false,
         },
       ]
     };
     window.onload = function() {
-      var ctx = document.querySelector('canvas.chartjs').getContext('2d');
-      window.myBar = new Chart(ctx, {
+      var elemContainer = document.querySelector('div.chartjs');
+      var elemChart = elemContainer.querySelector('canvas.chartjs');
+      var elemTooltip = elemContainer.querySelector('div.chartjs-tooltip');
+
+      elemTooltip.style.fontFamily = Chart.defaults.global.defaultFontFamily;
+      elemTooltip.style.fontSize = Chart.defaults.global.defaultFontSize + 'px';
+      elemTooltip.style.fontStyle = Chart.defaults.global.defaultFontStyle;
+
+      window.myBar = new Chart(elemChart.getContext('2d'), {
         type: 'bar',
         data: barChartData,
         options: {
@@ -177,8 +243,23 @@
             text: 'check-llvm stats'
           },
           tooltips: {
+            enabled: false,
             mode: 'index',
-            intersect: true
+            intersect: false,
+            position: 'nearest',
+            custom: function (info) {
+              if (info.opacity === 0 || !info.body) {
+                elemTooltip.style.opacity = 0;
+                return;
+              }
+
+              elemTooltip.innerHTML = renderTooltip(info);
+
+              // TODO: Align to column not to cursor.
+              elemTooltip.style.left = elemChart.offsetLeft + info.caretX + 'px';
+              elemTooltip.style.top = elemChart.offsetTop + 'px';
+              elemTooltip.style.opacity = 1;
+            },
           },
           scales: {
             yAxes: [
