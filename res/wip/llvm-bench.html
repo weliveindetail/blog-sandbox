@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>LLVM Bench</title>
+	<script src="Chart.js-2.9.4/dist/Chart.min.js"></script>
+	<script src="Chart.js-2.9.4/samples/utils.js"></script>
+	<style>
+	canvas {
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+	}
+	</style>
+</head>
+
+<body>
+	<canvas id="canvas"></canvas>
+	<script>
+		window.colors = {
+			red: 'rgb(255, 99, 132)',
+			orange: 'rgb(255, 159, 64)',
+			yellow: 'rgb(255, 205, 86)',
+			green: 'rgb(75, 192, 192)',
+			blue: 'rgb(54, 162, 235)',
+			purple: 'rgb(153, 102, 255)',
+			grey: 'rgb(201, 203, 207)'
+		};
+
+		window.transparent = {
+			none: 'rgba(0, 0, 0, 0)',
+			red: 'rgba(255, 99, 132, 0.1)',
+			orange: 'rgba(255, 159, 64, 0.1)',
+			yellow: 'rgba(255, 205, 86, 0.1)',
+			green: 'rgba(75, 192, 192, 0.1)',
+			blue: 'rgba(54, 162, 235, 0.1)',
+			purple: 'rgba(153, 102, 255, 0.1)',
+			grey: 'rgba(201, 203, 207, 0.1)'
+		};
+
+		var barChartData = {
+			labels: [
+				'LLVM 4 (2017-01-12)', 'LLVM 5 (2017-07-19)',
+				'LLVM 6 (2018-01-03)', 'LLVM 7 (2018-08-01)',
+				'LLVM 8 (2019-01-16)', 'LLVM 9 (2019-07-18)',
+				'LLVM 10 (2020-01-15)', 'LLVM 11 (2020-07-15)',
+				'LLVM 12 (2021-01-26)',
+			],
+			datasets: [{
+				label: 'ninja targets',
+				borderColor: window.colors.red,
+				backgroundColor: window.transparent.red,
+				borderWidth: 1,
+				yAxisID: 'y-axis-red',
+				data: [ 2287, 2479, 2592, 2802, 2861, 3008, 3166, 3348, 3456, ],
+			}, {
+				label: 'lit tests',
+				borderColor: window.colors.green,
+				backgroundColor: window.transparent.none,
+				borderWidth: 2,
+				yAxisID: 'y-axis-green',
+				data: [ 18907, 21073, 22781, 26357, 28776, 32192, 34876, 38089, 41422, ],
+				type: 'line',
+			}]
+		};
+		window.onload = function() {
+			var ctx = document.getElementById('canvas').getContext('2d');
+			window.myBar = new Chart(ctx, {
+				type: 'bar',
+				data: barChartData,
+				options: {
+					responsive: true,
+      		legend: {
+						position: 'bottom',
+						usePointStyle: true
+					},
+					title: {
+						display: true,
+						text: 'check-llvm stats'
+					},
+					tooltips: {
+						mode: 'index',
+						intersect: true
+					},
+					scales: {
+						yAxes: [{
+							type: 'linear',
+							display: true,
+							position: 'left',
+							id: 'y-axis-red',
+							scaleLabel: {
+								display: true,
+								labelString: 'ninja targets',
+								fontColor: window.colors.red,
+							},
+							ticks: {
+								fontColor: window.colors.red,
+							},
+							gridLines: {
+								drawOnChartArea: false,
+								color: window.colors.red,
+							}
+						}, {
+							type: 'linear',
+							display: true,
+							position: 'left',
+							id: 'y-axis-green',
+							scaleLabel: {
+								display: true,
+								labelString: 'lit tests',
+								fontColor: window.colors.green,
+							},
+							ticks: {
+								fontColor: window.colors.green,
+							},
+							gridLines: {
+								drawOnChartArea: false,
+								color: window.colors.green,
+							}
+						}],
+					}
+				}
+			});
+		};
+	</script>
+</body>
+
+</html>
