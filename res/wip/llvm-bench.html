@@ -49,7 +49,7 @@
             Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
             const meta = this.getMeta();
             const xScale = this.getScaleForId(meta.xAxisID);
-            point._model.x = xScale.getPixelForValue(undefined, index-0.2);
+            point._model.x = xScale.getPixelForValue(undefined, index-0.266);
         },
     });
     Chart.controllers.lineOffsetRight = Chart.controllers.line.extend({
@@ -110,39 +110,48 @@
     }
 
     function renderTooltip(info) {
-      var line = function(reItems, reTime, suffix) {
-        var items;
-        var seconds;
-        var col;
+      var icon = function (col) {
+        return `<span class="chartjs-tooltip-key" style="background: ${col}"></span>`;
+      }
+      var tr = function(content) {
+        return `<tr><td>${content}</td></tr>`;
+      }
+      var find = function(re) {
         for (var i = 0; i < info.body.length; i++) {
-          var matchItems = reItems.exec(info.body[i].lines);
-          if (matchItems) {
-            items = matchItems[1];
-            col = info.labelColors[i].borderColor;
-            continue;
-          }
-          var matchTime = reTime.exec(info.body[i].lines);
-          if (matchTime) {
-            seconds = matchTime[1];
-            continue;
-          }
+          var m = re.exec(info.body[i].lines);
+          if (m)
+            return [ m[1], info.labelColors[i].borderColor ];
         }
+        return undefined;
+      }
 
+      var itemsInTime = function(reItems, reTime, suffix) {
         // Some parts of the dataset may be hidden.
+        const [ items, col ] = find(reItems);
+        const [ seconds, _ ] = find(reTime);
         if (!seconds || !items)
           return "";
 
         var mins = Math.round(seconds / 60);
         var kilos = Math.round(items / 100) / 10;
-        var prefix = `<span class="chartjs-tooltip-key" style="background: ${col}"></span>`;
-        return `<tr><td>${prefix} ${mins}min for ${kilos}k ${suffix}</td></tr>`;
-      }
+        return tr(`${icon(col)} ${mins}min for ${kilos}k ${suffix}`);
+      };
+
+      var coverage = function(re) {
+        // Some parts of the dataset may be hidden.
+        const [ percent, col ] = find(re);
+        if (!percent)
+          return "";
+
+        return tr(`${icon(col)} Tests cover ${percent}% of the code`);
+      };
 
       return `<table>` +
                `<thead><tr><th>${info.title}</th></tr></thead>` +
                `<tbody>` +
-                 line(/ninja targets: ([0-9]+)/, /ninja runtime: ([0-9]+)/, 'build targets') +
-                 line(/lit tests: ([0-9]+)/, /lit runtime: ([0-9]+)/, 'tests') +
+                 itemsInTime(/ninja targets: ([0-9]+)/, /ninja runtime: ([0-9]+)/, 'build targets') +
+                 itemsInTime(/lit tests: ([0-9]+)/, /lit runtime: ([0-9]+)/, 'tests') +
+                 coverage(/test coverage: ([0-9]+)/) +
                `</tbody>` +
              `</table>`;
     }
@@ -189,17 +198,6 @@
           data: [ 2287, 2479, 2592, 2802, 2861, 3008, 3166, 3348, 3456 ],
         },
         {
-          label: 'ninja runtime',
-          borderColor: window.colors.orange,
-          backgroundColor: window.colors.orange,
-          borderWidth: 1,
-          yAxisID: 'y-axis-seconds',
-          data: buildTimes,
-          type: 'lineOffsetLeft',
-          steppedLine: false,
-          fill: false,
-        },
-        {
           label: 'lit tests',
           borderColor: window.colors.green,
           backgroundColor: alpha(window.colors.green, 0.25),
@@ -208,13 +206,32 @@
           data: [ 18753 + 154, 20933 + 140, 22632 + 149, 26201 + 156, 28621 + 155, 32037 + 155, 34724 + 152, 37928 + 161, 41264 + 158 ],
         },
         {
+          label: 'test coverage',
+          borderColor: window.colors.blue,
+          backgroundColor: alpha(window.colors.blue, 0.25),
+          borderWidth: 0,
+          yAxisID: 'y-axis-percent',
+          data: [ 10, 20, 30, 40, 50, 60, 70, 90, 100 ],
+        },
+        {
           label: 'lit runtime',
           borderColor: window.colors.green,
           backgroundColor: window.colors.green,
           borderWidth: 0,
           yAxisID: 'y-axis-seconds',
           data: testAvgRuntimes,
-          type: 'lineOffsetRight',
+          type: 'line',
+          steppedLine: false,
+          fill: false,
+        },
+        {
+          label: 'ninja runtime',
+          borderColor: window.colors.orange,
+          backgroundColor: window.colors.orange,
+          borderWidth: 1,
+          yAxisID: 'y-axis-seconds',
+          data: buildTimes,
+          type: 'lineOffsetLeft',
           steppedLine: false,
           fill: false,
         },
@@ -270,7 +287,7 @@
                 id: 'y-axis-orange',
                 scaleLabel: {
                   display: true,
-                  labelString: 'ninja targets',
+                  labelString: 'Number of build targets',
                   fontColor: alpha(window.colors.orange, 0.75),
                 },
                 ticks: {
@@ -290,7 +307,7 @@
                 id: 'y-axis-green',
                 scaleLabel: {
                   display: true,
-                  labelString: 'lit tests',
+                  labelString: 'Number of tests',
                   fontColor: alpha(window.colors.green, 0.75),
                 },
                 ticks: {
@@ -306,11 +323,31 @@
               {
                 type: 'linear',
                 display: true,
+                position: 'right',
+                id: 'y-axis-percent',
+                scaleLabel: {
+                  display: true,
+                  labelString: 'Test coverage in %',
+                  fontColor: alpha(window.colors.blue, 0.75),
+                },
+                ticks: {
+                  min: 0,
+                  max: 100,
+                  fontColor: alpha(window.colors.blue, 0.75),
+                },
+                gridLines: {
+                  drawOnChartArea: false,
+                  color: alpha(window.colors.blue, 0.33),
+                }
+              },
+              {
+                type: 'linear',
+                display: true,
                 position: 'left',
                 id: 'y-axis-seconds',
                 scaleLabel: {
                   display: true,
-                  labelString: 'minutes',
+                  labelString: 'Runtime minutes',
                 },
                 ticks: {
                   min: 0,

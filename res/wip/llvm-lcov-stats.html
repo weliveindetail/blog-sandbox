@@ -1,0 +1,253 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>LLVM Bench</title>
+  <script src="Chart.js-2.9.4/Chart.min.js"></script>
+  <style>
+    div.chartjs {
+      margin: 2rem;
+      padding: 1rem;
+      box-shadow: 0.25rem 0.25rem 1rem #aaa;
+    }
+    canvas.chartjs {
+      -moz-user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+    }
+    div.chartjs-tooltip {
+      opacity: 1;
+      position: absolute;
+      background: rgba(0, 0, 0, .7);
+      color: white;
+      border-radius: 3px;
+      padding: 5px;
+      -webkit-transition: all .1s ease;
+      transition: all .1s ease;
+      pointer-events: none;
+      -webkit-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .chartjs-tooltip-key {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chartjs">
+    <canvas class="chartjs"></canvas>
+    <div class="chartjs-tooltip" style="opacity: 0;"></div>
+  </div>
+  <script>
+    Chart.controllers.lineOffsetLeft = Chart.controllers.line.extend({
+        updateElement: function(point, index, reset) {
+            Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
+            const meta = this.getMeta();
+            const xScale = this.getScaleForId(meta.xAxisID);
+            point._model.x = xScale.getPixelForValue(undefined, index-0.2);
+        },
+    });
+    Chart.controllers.lineOffsetRight = Chart.controllers.line.extend({
+        updateElement: function(point, index, reset) {
+            Chart.controllers.line.prototype.updateElement.call(this, point, index, reset);
+            const meta = this.getMeta();
+            const xScale = this.getScaleForId(meta.xAxisID);
+            point._model.x = xScale.getPixelForValue(undefined, index+0.2);
+        },
+    });
+
+    window.colors = {
+      red: 'rgba(255, 99, 132, 1.0)',
+      orange: 'rgba(255, 159, 64, 1.0)',
+      yellow: 'rgba(255, 205, 86, 1.0)',
+      green: 'rgba(75, 192, 104, 1.0)',
+      blue: 'rgba(54, 162, 235, 1.0)',
+      purple: 'rgba(153, 102, 255, 1.0)',
+      grey: 'rgba(201, 203, 207, 1.0)',
+    };
+
+    function parseRGB(str) {
+      var vals;
+      if (str.startsWith("rgb")) {
+        vals = str.split(/[,\(\)]/)
+                  .map(n => parseFloat(n))
+                  .filter(n => !isNaN(n));
+      }
+      else {
+        console.error("Color encoding not implemented");
+        return [];
+      }
+      if (vals.length < 3)
+        console.warn(`Parsing RGB(A) string '${str}' gave: ${vals}`)
+      return vals;
+    }
+
+    function alpha(str, factor) {
+      var [r, g, b, a] = parseRGB(str);
+      var val = (a === undefined ? 1 : a) * (factor === undefined ? 0.5 : factor);
+      return `rgba(${r}, ${g}, ${b}, ${val})`;
+    }
+
+    function mega(arr) {
+      return arr.map(val => val / 1000000);
+    }
+
+    window.onload = function() {
+      var elemContainer = document.querySelector('div.chartjs');
+      var elemChart = elemContainer.querySelector('canvas.chartjs');
+      var elemTooltip = elemContainer.querySelector('div.chartjs-tooltip');
+
+      elemTooltip.style.fontFamily = Chart.defaults.global.defaultFontFamily;
+      elemTooltip.style.fontSize = Chart.defaults.global.defaultFontSize + 'px';
+      elemTooltip.style.fontStyle = Chart.defaults.global.defaultFontStyle;
+
+      window.myBar = new Chart(elemChart.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: [
+            ['LLVM 4', ' 2017'],
+            ['LLVM 5', ' 2017'],
+            ['LLVM 6', ' 2018'],
+            ['LLVM 7', ' 2018'],
+            ['LLVM 8', ' 2019'],
+            ['LLVM 9', ' 2019'],
+            ['LLVM 10', ' 2020'],
+            ['LLVM 11', ' 2020'],
+            ['LLVM 12', ' 2021'],
+          ],
+          datasets: [
+            {
+              label: 'line converage %',
+              borderColor: window.colors.orange,
+              backgroundColor: alpha(window.colors.orange, 0.25),
+              borderWidth: 0,
+              yAxisID: 'y-axis-percent',
+              data: [ 82.1, 81.4, 83.0, 83.2, 82.3, 82.9, 84.1, 84.3, 84.4, ],
+            },
+            {
+              label: 'function coverage %',
+              borderColor: window.colors.green,
+              backgroundColor: alpha(window.colors.green, 0.25),
+              borderWidth: 0,
+              yAxisID: 'y-axis-percent',
+              data: [ 84.6, 82.4, 83.3, 83.4, 82.2, 83.2, 82.4, 82.1, 81.4, ],
+            },
+            {
+              label: 'lines total (lcov)',
+              borderColor: window.colors.orange,
+              backgroundColor: window.colors.orange,
+              borderWidth: 0,
+              yAxisID: 'y-axis-lines',
+              data: mega([
+                877721, 964821, 1012339, 1090666,
+                1163064, 1257838, 1296567, 1384479,
+                1457901,
+              ]),
+              type: 'lineOffsetLeft',
+              steppedLine: false,
+              fill: false,
+            },
+            {
+              label: 'functions total (lcov)',
+              borderColor: window.colors.green,
+              backgroundColor: window.colors.green,
+              borderWidth: 1,
+              yAxisID: 'y-axis-lines',
+              data: mega([
+                478276, 553453, 631261, 707438,
+                774977, 838701, 924682, 998820,
+                1074451,
+              ]),
+              type: 'lineOffsetRight',
+              steppedLine: false,
+              fill: false,
+            },
+            {
+              label: 'lines total (cloc)',
+              borderColor: window.colors.grey,
+              backgroundColor: window.colors.grey,
+              borderWidth: 0,
+              yAxisID: 'y-axis-lines',
+              data: mega([
+                900358+233546, // 1133904
+                982634+248461,
+                1047886+259699,
+                1125688+275448,
+                1190706+292385,
+                1266217+305322,
+                1341842+318316,
+                1435094+331695,
+                1514295+344136, // 1858431
+              ]),
+              type: 'lineOffsetLeft',
+              steppedLine: false,
+              fill: false,
+            },
+          ]
+        },
+        options: {
+          responsive: true,
+          legend: {
+            position: 'bottom',
+            usePointStyle: true
+          },
+          title: {
+            display: true,
+            text: 'check-llvm stats'
+          },
+          scales: {
+            yAxes: [
+              {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                id: 'y-axis-percent',
+                scaleLabel: {
+                  display: true,
+                  labelString: 'Test coverage in %',
+                },
+                ticks: {
+                  min: 0,
+                  max: 100,
+                },
+                gridLines: {
+                  drawOnChartArea: true,
+                }
+              },
+              {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                id: 'y-axis-lines',
+                scaleLabel: {
+                  display: true,
+                  labelString: 'Total number of lines / functions',
+                },
+                ticks: {
+                  min: 0,
+                  max: 2,
+                  callback: function(value, index, values) {
+                    if (value)
+                      return value.toFixed(1) + 'M';
+                    else
+                      return 0;
+                  }
+                },
+                gridLines: {
+                  drawOnChartArea: false,
+                }
+              },
+            ],
+          }
+        }
+      });
+    };
+  </script>
+</body>
+
+</html>
