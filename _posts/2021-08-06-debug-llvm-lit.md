@@ -48,7 +48,7 @@ Next, open vscode, create a `launch.json` and add a `Python` debug configuration
 Launching this configuration triggers the Python process to run the test suite. If a test fails, execution gets interrupted with an exception and vscode points you to the code location. In all LIT modules and scripts with a `.py` file extension you can now set breakpoints as usual.
 
 However, a lot of configuration scripts in LLVM still have no `.py` extension. Instead they have are interpreted as Python code only through exec() commands in the main Python driver. vscode won't let you set breakpoints here. This is where the [explicit breakpoint feature in `debugpy`](https://github.com/microsoft/debugpy/#breakpoint-function){:target="_blank"} is really useful! Just add these two lines in your `lit.local.cfg` file:
-```
+```py
 import debugpy
 debugpy.breakpoint()
 ```
