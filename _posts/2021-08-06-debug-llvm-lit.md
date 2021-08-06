@@ -8,7 +8,7 @@ title: "Debugging llvm-lit in vscode"
 description: "LLVM's test driver LIT contains a mix of Python modules and configuration scripts that can be a little tricky to debug"
 ---
 
-![https://weliveindetail.github.io/blog-sandbox/res/debug-llvm-lit.png]
+!["Inspect lit.local.cfg in vscode"](https://weliveindetail.github.io/blog-sandbox/res/debug-llvm-lit.png)
 
 The [LLVM Integrated Tester `llvm-lit`](https://llvm.org/docs/CommandGuide/lit.html){:target="_blank"} provides the test infrastructure for LLVM and its subprojects. It features automatic test exploration, fine-grained hierarchical configration and a flexible notation for `RUN` and `CHECK` lines (in combination with [FileCheck](https://llvm.org/docs/CommandGuide/FileCheck.html){:target="_blank"}). LIT also exists as a [standalone package](https://pypi.org/project/lit/){:target="_blank"}. If you are looking for a tool to run input/output tests, it's certainly worth considering LIT.
 
@@ -42,7 +42,7 @@ Next, open vscode, create a `launch.json` and add a `Python` debug configuration
       "remoteRoot": "."
     }
   ]
-},
+}
 ```
 
 Launching this configuration triggers the Python process to run the test suite. If a test fails, execution gets interrupted with an exception and vscode points you to the code location. In all LIT modules and scripts with a `.py` file extension you can now set breakpoints as usual.
