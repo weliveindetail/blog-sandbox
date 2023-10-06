@@ -15,14 +15,20 @@ permalink: /about/
     margin-bottom: 10px;
   }
 
-  div.portrait {
+  div.sect {
     overflow: auto;
     margin-top: 30px;
   }
 
-  div.portrait > img {
+  div.sect > img.portait {
     width: 25%;
     padding-right: 15px;
+    padding-bottom: 10px;
+  }
+
+  div.sect > img.baobab {
+    max-width: min(100%, 500px);
+    padding-left: 15px;
     padding-bottom: 10px;
   }
 
@@ -34,8 +40,9 @@ permalink: /about/
 
 ### Looking for help with a project that uses LLVM?
 
-<div class="portrait">
-  <img src="https://weliveindetail.github.io/blog/res/2023-profile.jpg" align="left">
+<div class="sect">
+  <img src="https://weliveindetail.github.io/blog-sandbox/res/2023-profile.jpg"
+       class="baobab" align="left">
   <p>
     <b>As an independent contributor</b> I am actively <a href="https://github.com/llvm/llvm-project/commits?author=weliveindetail">working on LLVM</a>.
   </p>
@@ -51,23 +58,13 @@ permalink: /about/
 
 #### LLVM upstream contributions
 
-<style>
-  #large-image {
-    max-width: min(100%, 500px);
-  }
-  .center {
-    display: block;
-    margin: 0 auto;
-  }
-</style>
-
-<div>
+<div class="sect">
   <p>
     <a href="https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.html" target="_blank">Interactive visualization</a> of my <a href="https://github.com/llvm/llvm-project/commits?author=weliveindetail">LLVM upstream contributions</a> rendered with <a href="https://github.com/weliveindetail/git-baobab" target="_blank">git-baobab</a>. Leaf nodes link to list of individual commits on GitHub:
   </p>
   <a href="https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.html" target="_blank">
-    <img alt="2023 Baobab-Me LLVM" id="large-image" class="center"
-         src="https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.jpg" align="right">
+    <img alt="2023 Baobab-Me LLVM" class="baobab"
+         src="https://weliveindetail.github.io/blog-sandbox/res/2023-baobab-me-llvm.jpg" align="right">
   </a>
 </div>
 
@@ -80,17 +77,19 @@ permalink: /about/
 
 #### Evaluations
 
-* Evaluate feasibility and estimate efforts
-* Solve tricky questions early to limit risks
+* Evaluate feasibility and estimate efforts for your planning
+* Solve tricky questions early on to limit risks
 
 #### Porting
 
-* Port your project to new platforms -- [why not Windows](https://www.reddit.com/r/cpp/comments/4l2mdd/juce_projucer_live_c_ide_has_been_coming_soon_for/d84gp1t/)?
+* Port your project to new platforms and architectures
+* I have extensive experience with [Windows ports](https://www.reddit.com/r/cpp/comments/4l2mdd/juce_projucer_live_c_ide_has_been_coming_soon_for/d84gp1t/)
+* IoT embedded and bare-metal projects are ramping up
 
 #### Mentoring
 
-* Plan tasks for internal devs to work on and learn
-* Have an expert near-by for both, regular mentoring and emergencies
+* Train internal devs by working on ready-made tasks
+* Have an expert at hand for for both mentoring and emergencies
 
 #### Bugfixing
 
