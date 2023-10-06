@@ -51,8 +51,6 @@ permalink: /about/
 
 #### LLVM upstream contributions
 
-Interactive visualization of my LLVM upstream contributions rendered with [git-baobab](https://github.com/weliveindetail/git-baobab). Leaf nodes link to list of individual commits on GitHub:
-
 <style>
   #large-image {
     max-width: min(100%, 500px);
@@ -63,8 +61,46 @@ Interactive visualization of my LLVM upstream contributions rendered with [git-b
   }
 </style>
 
-[![2023 Baobab-Me LLVM](https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.jpg){: #large-image}{: .center}](https://github.com/llvm/llvm-project/commits?author=weliveindetail)
-{:target="_blank"}
+<div>
+  <p>
+    <a href="https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.html" target="_blank">Interactive visualization</a> of my <a href="https://github.com/llvm/llvm-project/commits?author=weliveindetail">LLVM upstream contributions</a> rendered with <a href="https://github.com/weliveindetail/git-baobab" target="_blank">git-baobab</a>. Leaf nodes link to list of individual commits on GitHub:
+  </p>
+  <a href="https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.html" target="_blank">
+    <img alt="2023 Baobab-Me LLVM" id="large-image" class="center"
+         src="https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.jpg" align="right">
+  </a>
+</div>
+
+<hr class="dashed">
+
+#### Setup
+
+* Get your project started right now and build a solid foundation
+* Set up build and test infrastructure that fits with upstream LLVM
+
+#### Evaluations
+
+* Evaluate feasibility and estimate efforts
+* Solve tricky questions early to limit risks
+
+#### Porting
+
+* Port your project to new platforms -- [why not Windows](https://www.reddit.com/r/cpp/comments/4l2mdd/juce_projucer_live_c_ide_has_been_coming_soon_for/d84gp1t/)?
+
+#### Mentoring
+
+* Plan tasks for internal devs to work on and learn
+* Have an expert near-by for both, regular mentoring and emergencies
+
+#### Bugfixing
+
+* Investigate problems with public toolchain releases
+* Fix them upstream to limit future maintenance effort
+
+#### Feature Development
+
+* Prototype your new feature in a downstream fork
+* Upstream it into public toolchain releases
 
 <hr class="dashed">
 
