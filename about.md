@@ -35,7 +35,7 @@ permalink: /about/
 ### Looking for help with a project that uses LLVM?
 
 <div class="portrait">
-  <img src="https://reviews.llvm.org/file/data/anjg4ozfsophjjhg6q2c/PHID-FILE-nlwmagbdwldcho3scmuz/profile" align="left">
+  <img src="https://weliveindetail.github.io/blog/res/2023-profile.jpg" align="left">
   <p>
     <b>As an independent contributor</b> I am actively <a href="https://github.com/llvm/llvm-project/commits?author=weliveindetail">working on LLVM</a>.
   </p>
@@ -46,6 +46,25 @@ permalink: /about/
     <b>I have a track record of remote work</b> with various companies since 2016 and offer flexible conditions to match your demands. Feel free to reach out for questions <a href="click:the.address.will.be.decrypted.by.javascript" onclick='openMailer(this);'>via email</a> or <a href="https://calendly.com/stefan-graenitz/30min" target="_blank">schedule a video call</a> right away.
   </p>
 </div>
+
+<hr class="dashed">
+
+#### LLVM upstream contributions
+
+Interactive visualization of my LLVM upstream contributions rendered with [git-baobab](https://github.com/weliveindetail/git-baobab). Leaf nodes link to list of individual commits on GitHub:
+
+<style>
+  #large-image {
+    max-width: min(100%, 500px);
+  }
+  .center {
+    display: block;
+    margin: 0 auto;
+  }
+</style>
+
+[![2023 Baobab-Me LLVM](https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.jpg){: #large-image}{: .center}](https://github.com/llvm/llvm-project/commits?author=weliveindetail)
+{:target="_blank"}
 
 <hr class="dashed">
 
