@@ -28,8 +28,8 @@ permalink: /about/
 
   div.sect > img.baobab {
     max-width: min(100%, 500px);
-    padding-left: 15px;
-    padding-bottom: 10px;
+    display: block;
+    margin: 0 auto;
   }
 
   hr.dashed {
@@ -42,7 +42,7 @@ permalink: /about/
 
 <div class="sect">
   <img src="https://weliveindetail.github.io/blog-sandbox/res/2023-profile.jpg"
-       class="baobab" align="left">
+       class="portrait" align="left">
   <p>
     <b>As an independent contributor</b> I am actively <a href="https://github.com/llvm/llvm-project/commits?author=weliveindetail">working on LLVM</a>.
   </p>
@@ -64,7 +64,7 @@ permalink: /about/
   </p>
   <a href="https://weliveindetail.github.io/blog/res/2023-baobab-me-llvm.html" target="_blank">
     <img alt="2023 Baobab-Me LLVM" class="baobab"
-         src="https://weliveindetail.github.io/blog-sandbox/res/2023-baobab-me-llvm.jpg" align="right">
+         src="https://weliveindetail.github.io/blog-sandbox/res/2023-baobab-me-llvm.jpg">
   </a>
 </div>
 
