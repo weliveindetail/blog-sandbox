@@ -5,17 +5,14 @@ author: Stefan Gränitz
 date: 2023-10-19 10:00:00 +0200
 image: https://weliveindetail.github.io/blog/res/2023-llvm-repo-structure.png
 preview: summary_large_image
-title: "Maintaining a minimal fork downstream of LLVM"
-description: "LLVM has issued a number of challenging project ideas for the upcoming GSoC. The application period for contributors starts today, 20 March and ends on 4 April."
+title: "Maintain a reduced fork of LLVM"
+description: "What about stripping down the LLVM monorepo in order to checkout and build one specific tool quickly? It’s pretty simple to do once. This post describes how to keep it maintainable."
 source: https://github.com/weliveindetail/blog/main/_posts/2023-10-19-llvm-jitlink-executor.md
 ---
 
 <style>
-  #banner-image {
-    max-width: min(100%, 500px);
-  }
   #large-image {
-    max-width: min(100%, 500px);
+    max-width: min(100%, 400px);
   }
   .center {
     display: block;
@@ -23,10 +20,7 @@ source: https://github.com/weliveindetail/blog/main/_posts/2023-10-19-llvm-jitli
   }
 </style>
 
-![llvm-release-branches](https://weliveindetail.github.io/blog-sandbox/res/2023-llvm-repo-structure.png){: #banner-image}{: .center}
-
-The LLVM monorepo turned into a beast. At the time of writing this post, a fresh checkout of the `main` branch is 5.2G in size. In the last 5 months it grew by ...
-And it keeps growing with a frightening pace.
+The [LLVM monorepo](https://llvm.org/docs/DeveloperPolicy.html#adding-an-established-project-to-the-llvm-monorepo){:target="_blank"} turned into a beast. At the time of writing this post, a fresh checkout of the `main` branch is 3.9G in size and it will only keep growing.
 
 The massive size of the repository can make our lifes as developers a little uncomfortable at times and it inflates network traffic for build bots. It's a real problem if we want to build a tiny piece from LLVM on a small device. This is the case with the `llvm-jitlink-executor` tool, which is the RPC endpoint for ORC JIT in upstream LLVM. It's very useful when developing new LLVM JITLink backends like AArch32, because devices with this CPU architecture are no suitable development machines. We cannot checkout and build LLVM on a Raspberry Pi. It just doesn't have enough resources. Instead we want to continue developing on our favored workstation (like a regular Linux PC), cross-JIT compile our test code and only execute it on the remote device. Sure, we could cross-compile LLVM for the target device on our workstation and transfer just the `llvm-jitlink-executor` binary, but we'd have to set up a proper cross-toolchain and that is quite some effort too. It's much easier to checkout a small repository on the device itself and build the binary there.
 
@@ -39,7 +33,7 @@ Maintaining repositories downstream from LLVM is a challenge on its own, because
 ![llvm-release-branches](https://weliveindetail.github.io/blog-sandbox/res/2023-llvm-repo-structure.png){: #large-image}{: .center}
 
 The last commit before a branch point can be found with `git merge-base`:
-```
+```git
 llvm-project ➜ git remote -v
 origin      https://github.com/llvm/llvm-project (fetch)
 origin      <invalidated> (push)
@@ -119,7 +113,7 @@ llvm-jitlink-executor ➜ git commit -m "Mainline increment release/17.x"
 ```
 
 We can do the same for the commits on the release branch and get the reduced history upstream:
-```
+```terminal
 llvm-jitlink-executor ➜ git checkout -b release/17.x-fixes upstream/release/17.x
 llvm-jitlink-executor ➜ git reset --soft release/17.x-increment
 llvm-jitlink-executor ➜ git commit -m "Release branch increment release/17.x"
@@ -130,7 +124,7 @@ llvm-jitlink-executor ➜ git log --oneline -3
 ```
 
 Now let's copy them over into the downstream repo with `git cherry-pick`, resolve conflicts by removing the subprojects we don't need and adding all other changes:
-```
+```bash
 llvm-jitlink-executor ➜ git checkout eurollvm-2023
 llvm-jitlink-executor ➜ git checkout -b main
 llvm-jitlink-executor ➜ git cherry-pick --no-commit 77c923bb7aea
