@@ -33,7 +33,7 @@ Maintaining repositories downstream from LLVM is a challenge on its own, because
 ![llvm-release-branches](https://weliveindetail.github.io/blog-sandbox/res/2023-llvm-repo-structure.png){: #large-image}{: .center}
 
 The last commit before a branch point can be found with `git merge-base`:
-```git
+```
 llvm-project ➜ git remote -v
 origin      https://github.com/llvm/llvm-project (fetch)
 origin      <invalidated> (push)
@@ -74,7 +74,7 @@ It's a good idea to add the ID of the latest included upstream commit as a prefi
 
 ### Let's build it in git!
 
-Last time I updated the repo was for [my 2023 EuroLLVM presentation](https://www.youtube.com/watch?v=9jFXNRzDSf0){:target="_blank"}. This is where we start from:
+Last time I updated the repo was for my [2023 EuroLLVM presentation](https://www.youtube.com/watch?v=9jFXNRzDSf0){:target="_blank"}. This is where we start from:
 ```
 llvm-jitlink-executor ➜ git remote -v
 origin      https://github.com/echtzeit-dev/llvm-jitlink-executor (fetch)
@@ -113,7 +113,7 @@ llvm-jitlink-executor ➜ git commit -m "Mainline increment release/17.x"
 ```
 
 We can do the same for the commits on the release branch and get the reduced history upstream:
-```terminal
+```
 llvm-jitlink-executor ➜ git checkout -b release/17.x-fixes upstream/release/17.x
 llvm-jitlink-executor ➜ git reset --soft release/17.x-increment
 llvm-jitlink-executor ➜ git commit -m "Release branch increment release/17.x"
@@ -123,8 +123,8 @@ llvm-jitlink-executor ➜ git log --oneline -3
 4c7f53b99c08 [Orc] Add AutoRegisterCode option for DebugObjectManagerPlugin
 ```
 
-Now let's copy them over into the downstream repo with `git cherry-pick`, resolve conflicts by removing the subprojects we don't need and adding all other changes:
-```bash
+Now let's bring them downstream with `git cherry-pick`. We resolve conflicts by removing the subprojects we don't need and by adding everything else:
+```
 llvm-jitlink-executor ➜ git checkout eurollvm-2023
 llvm-jitlink-executor ➜ git checkout -b main
 llvm-jitlink-executor ➜ git cherry-pick --no-commit 77c923bb7aea
@@ -164,7 +164,7 @@ build ➜ ls -lh build/bin/llvm-jitlink-executor
 llvm-jitlink-executor ➜ git push --set-upstream origin release/17.x
 ```
 
-### Does mainline have more changes we care about?
+### More relevant changes on mainline?
 
 The `llvm-jitlink-executor` tool doesn't depend on all of LLVM, but only a few pieces, in particular:
 ```
