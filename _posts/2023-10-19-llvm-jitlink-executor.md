@@ -2,7 +2,7 @@
 layout: post
 categories: post
 author: Stefan Gränitz
-date: 2023-10-19 20:00:00 +0200
+date: 2023-10-19 10:00:00 +0200
 image: https://weliveindetail.github.io/blog/res/2023-llvm-repo-structure.png
 preview: summary_large_image
 title: "Maintaining a minimal fork downstream of LLVM"
@@ -80,7 +80,7 @@ It's a good idea to add the ID of the latest included upstream commit as a prefi
 
 ### Let's build it in git!
 
-Last time I updated the repo was for [my 2023 EuroLLVM presentation](){:target="_blank"}. This is where we start from:
+Last time I updated the repo was for [my 2023 EuroLLVM presentation](https://www.youtube.com/watch?v=9jFXNRzDSf0){:target="_blank"}. This is where we start from:
 ```
 llvm-jitlink-executor ➜ git remote -v
 origin      https://github.com/echtzeit-dev/llvm-jitlink-executor (fetch)
