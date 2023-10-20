@@ -3,7 +3,7 @@ layout: post
 categories: post
 author: Stefan Gränitz
 date: 2023-10-19 10:00:00 +0200
-image: https://weliveindetail.github.io/blog/res/2023-llvm-repo-structure.png
+image: https://weliveindetail.github.io/blog-sandbox//res/2023-llvm-repo-structure.png
 preview: summary_large_image
 title: "Maintain a reduced fork of LLVM"
 description: "What about stripping down the LLVM monorepo in order to checkout and build one specific tool quickly? It’s pretty simple to do once. This post describes how to keep it maintainable."
@@ -20,15 +20,17 @@ source: https://github.com/weliveindetail/blog/main/_posts/2023-10-19-llvm-jitli
   }
 </style>
 
-The [LLVM monorepo](https://llvm.org/docs/DeveloperPolicy.html#adding-an-established-project-to-the-llvm-monorepo){:target="_blank"} turned into a beast. At the time of writing this post, a fresh checkout of the `main` branch is 3.9G in size and it will only keep growing.
+The [LLVM monorepo](https://llvm.org/docs/DeveloperPolicy.html#adding-an-established-project-to-the-llvm-monorepo){:target="_blank"} turned into a beast. At the time of writing this post, a fresh checkout of the `main` branch is 3.9G in size and it will only keep growing. What about stripping down the LLVM monorepo in order to checkout and build one specific tool quickly? It’s pretty simple to do once. This post describes how to keep it maintainable.
 
-The massive size of the repository can make our lifes as developers a little uncomfortable at times and it inflates network traffic for build bots. It's a real problem if we want to build a tiny piece from LLVM on a small device. This is the case with the `llvm-jitlink-executor` tool, which is the RPC endpoint for ORC JIT in upstream LLVM. It's very useful when developing new LLVM JITLink backends like AArch32, because devices with this CPU architecture are no suitable development machines. We cannot checkout and build LLVM on a Raspberry Pi. It just doesn't have enough resources. Instead we want to continue developing on our favored workstation (like a regular Linux PC), cross-JIT compile our test code and only execute it on the remote device. Sure, we could cross-compile LLVM for the target device on our workstation and transfer just the `llvm-jitlink-executor` binary, but we'd have to set up a proper cross-toolchain and that is quite some effort too. It's much easier to checkout a small repository on the device itself and build the binary there.
+### A concrete example
 
-The [`llvm-jitlink-executor` tool itself is fairly small](https://github.com/llvm/llvm-project/tree/release/17.x/llvm/tools/llvm-jitlink/llvm-jitlink-executor){:target="_blank"} and it only depends on the `Support`, `OrcShared` and `OrcTargetProcess` libraries. We don't need any other subproject from the monorepo and we don't want to develop on the device, so we don't need the git history either. All that's necessary is the matching source version, because the RPC interface doesn't provide a versioning mechanism. What about stripping down the LLVM monorepo and cutting down the git history so that we can checkout and build the `llvm-jitlink-executor` tool quickly? It's pretty simple when we do it once. This post describes how to keep it maintainable.
+The massive size of the repository can make our lifes as developers a little uncomfortable at times and it inflates network traffic for build bots. It's a real problem if we want to build a tiny piece from LLVM on a small device. This is the case with the `llvm-jitlink-executor` tool, which is the RPC endpoint for [ORC JIT](https://llvm.org/docs/ORCv2.html){:target="_blank"} in upstream LLVM. It's very useful when developing new [LLVM JITLink](https://llvm.org/docs/JITLink.html){:target="_blank"} backends like [AArch32](https://github.com/llvm/llvm-project/commit/c2de8ff92753acdb1ace7a27cc11cb09f28eb8fa){:target="_blank"}, because devices with this CPU architecture are no suitable development machines. We cannot checkout and build LLVM on a Raspberry Pi. It just doesn't have enough resources. Instead we want to continue developing on our favored workstation (like a regular Linux PC), cross-JIT-compile our test code and only execute it on the remote device (using `llvm-jitlink-executor` as the RPC endpoint over there). Sure, we could cross-compile LLVM for the target device on our workstation and transfer just the `llvm-jitlink-executor` binary, but we'd have to set up a proper cross-toolchain and that is quite some effort too. It's much easier to checkout a small repository on the device itself and build the binary there.
+
+The [`llvm-jitlink-executor` tool itself is fairly small](https://github.com/llvm/llvm-project/tree/release/17.x/llvm/tools/llvm-jitlink/llvm-jitlink-executor){:target="_blank"} and it only depends on the `Support`, `OrcShared` and `OrcTargetProcess` libraries. We don't need any other subproject from the monorepo. And we don't want to develop on the device so we don't need a detailed git history either. All that's necessary is to checkout and build the `llvm-jitlink-executor` tool quickly from a matching source version, because upstream ORC JIT doesn't provide a versioned RPC interface. Let's strip down the LLVM monorepo and squash away all we can from the git history in a maintainable way.
 
 ### Mapping to the LLVM upstream repository
 
-Maintaining repositories downstream from LLVM is a challenge on its own, because LLVM develops quickly and doesn't care much about backwards compatibility. Our scenario is simplified though, because we have no downstream changes, which are modifications of the upstream code somewhere in the middle of the git history. We basically only want snapshots of the LLVM monorepo at specific points in history that are smaller in size. The release branch structure should follow the one in LLVM:
+Maintaining repositories downstream from LLVM is a challenge on its own, because LLVM develops quickly and doesn't care much about backwards compatibility. Our scenario is relatively simple, because we have no downstream changes (modifications of the upstream code somewhere in the middle of the git history). The release branch scheme should follow the one in LLVM:
 
 ![llvm-release-branches](https://weliveindetail.github.io/blog-sandbox/res/2023-llvm-repo-structure.png){: #large-image}{: .center}
 
@@ -43,7 +45,7 @@ llvm-project ➜ git merge-base release/17.x main
 d0b54bb50e5110a004b41fc06dadf3fee70834b7
 ```
 
-`16.x` branched after `b0daacf58f41` and `17.x` branched after `d0b54bb50e51`. While release branches are reasonably short, the number of commits in between releases can be huge:
+`16.x` branched after `b0daacf58f41` and `17.x` branched after `d0b54bb50e51`. Release branches are reasonably short, but the number of commits in between releases is huge:
 ```
 llvm-project ➜ git log --oneline b0daacf58f41..release/16.x | wc -l
      315
@@ -53,7 +55,7 @@ llvm-project ➜ git log --oneline b0daacf58f41..d0b54bb50e51 | wc -l
    19305
 ```
 
-Do we need all this history? Not really, a few snapshots would be sufficient. In principle we could store them as unrelated `--orphan` branches, but with a growing number of versions we would accumulate lots of isolated blobs that don't share any data. It would be better to keep the `--orphan` branch for our first version and continue with a reduced history where we squash most patches into a few single commits:
+Do we need all this history? Not really, a few snapshots would be sufficient. In principle we could store them as unrelated `--orphan` branches, but with a growing number of versions we would accumulate lots of isolated blobs that don't share any data. It's better to keep the `--orphan` branch for our first version and continue with regular commit deltas. We can squash the huge amount of patches into a few single commits like this:
 ```
 llvm-jitlink-executor ➜ git log --oneline main
 0c846d6b14e1 [downstream] Add README and extra debug dumps
