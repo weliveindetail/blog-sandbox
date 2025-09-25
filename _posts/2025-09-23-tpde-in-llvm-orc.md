@@ -23,7 +23,7 @@ source: https://github.com/weliveindetail/blog/main/_posts/2023-08-29-omvll-clan
   }
 </style>
 
-![tpde-banner](https://weliveindetail.github.io/blog/res/2025-tpde-orc.png){: #large-image}{: .center}
+![tpde-banner](https://weliveindetail.github.io/blog-sandbox/res/2025-tpde-orc.png){: #large-image}{: .center}
 
 [TPDE](https://arxiv.org/abs/2505.22610) is a single-pass compiler backend for LLVM that was [open-sourced earlier this year](https://discourse.llvm.org/t/tpde-llvm-10-20x-faster-llvm-o0-back-end/) by [TUM](https://db.in.tum.de). The [documentation shows](https://docs.tpde.org/tpde-llvm-main.html) how to integrate it in custom builds of Clang and Flang. Supported release versions are [LLVM 19](https://github.com/tpde2/tpde/blob/c857798/llvm.ab51eccf88f5.patch) and [LLVM 20](https://github.com/tpde2/tpde/blob/c857798/llvm.616f2b685b06.patch).
 
@@ -162,5 +162,5 @@ In the above patch we create a new `SimpleCompiler` instance for each fallback c
 
 ### Concurrent compilation on ORC
 
-ORC JIT supports concurrent compilation of concurrent code! This is neat, but it needs attention in customizations. TPDE's `compile_to_elf()` is not thread-safe: It fails if we call it concurrently from multiple threads, but this is exactly what happens in ORC. We need to fix this, but we don't want to create a new TPDE instance for each compile job. This is the fast path!
+ORC JIT supports concurrent compilation of concurrent code! This is neat, but it needs attention when we customize it. TPDE's `compile_to_elf()` is not thread-safe: It fails if we call it concurrently from multiple threads, but this is exactly what happens in ORC. We need to fix this in the `TPDECompiler` class, but we don't want to create a new TPDE instance for each compile job. This is the fast path!
 
