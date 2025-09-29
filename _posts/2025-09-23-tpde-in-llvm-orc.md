@@ -25,11 +25,11 @@ source: https://github.com/weliveindetail/blog/main/_posts/2025-09-23-tpde-in-ll
 
 ![tpde-banner](https://weliveindetail.github.io/blog-sandbox/res/2025-tpde-orc.png){: #large-image}{: .center}
 
-[TPDE](https://arxiv.org/abs/2505.22610){:target="_blank"} is a single-pass compiler backend for LLVM that was [open-sourced earlier this year](https://discourse.llvm.org/t/tpde-llvm-10-20x-faster-llvm-o0-back-end/){:target="_blank"} by [TUM](https://db.in.tum.de){:target="_blank"}. The [documentation shows](https://docs.tpde.org/tpde-llvm-main.html){:target="_blank"} how to integrate it in custom builds of Clang and Flang. Supported release versions are [LLVM 19](https://github.com/tpde2/tpde/blob/c857798/llvm.ab51eccf88f5.patch){:target="_blank"} and [LLVM 20](https://github.com/tpde2/tpde/blob/c857798/llvm.616f2b685b06.patch){:target="_blank"}.
+[TPDE](https://arxiv.org/abs/2505.22610){:target="_blank"} is a single-pass compiler backend for LLVM that was [open-sourced earlier this year](https://discourse.llvm.org/t/tpde-llvm-10-20x-faster-llvm-o0-back-end/){:target="_blank"} by researchers at [TUM](https://db.in.tum.de){:target="_blank"}. The [comprehensive documentation](https://docs.tpde.org/tpde-llvm-main.html){:target="_blank"} walks you through integrating TPDE into custom builds of Clang and Flang. Currently, it supports [LLVM 19](https://github.com/tpde2/tpde/blob/c857798/llvm.ab51eccf88f5.patch){:target="_blank"} and [LLVM 20](https://github.com/tpde2/tpde/blob/c857798/llvm.616f2b685b06.patch){:target="_blank"} release versions.
 
 ### Integration in LLVM ORC JIT
 
-The primary goal of TPDE is low-latency code generation while maintaining reasonable (-O0) code quality. That makes it a perfect fit for a baseline JIT compiler. LLVM's [On-Request Compilation (ORC)](https://llvm.org/docs/ORCv2.html){:target="_blank"} provides a set of libraries to write JIT compilers for LLVM IR input. ORC uses LLVM's built-in backends for codegen by default, but it's very easy to use TPDE instead thanks to its various extension points!
+TPDE's primary strength lies in delivering low-latency code generation while maintaining reasonable (-O0) code quality — making it an ideal choice for a baseline JIT compiler. LLVM's [On-Request Compilation (ORC)](https://llvm.org/docs/ORCv2.html){:target="_blank"} framework provides a set of libraries for building JIT compilers for LLVM IR. While ORC uses LLVM's built-in backends by default, its flexible architecture makes it straightforward to swap in TPDE instead!
 
 Let's say we use the `LLJITBuilder` interface to instantiate an off-the-shelf JIT:
 
@@ -39,9 +39,7 @@ auto Builder = LLJITBuilder();
 std::unique_ptr<LLJIT> JIT = ExitOnErr(Builder.create());
 ```
 
-The builder provides a set of extension points to customize the JIT instance that it creates.
-We can overwrite the `CreateCompileFunction` member to define the codegen component, which
-compiles LLVM IR into machine code:
+The builder offers several extension points to customize the JIT instance it creates. To integrate TPDE, we'll override the `CreateCompileFunction` member, which defines how LLVM IR gets compiled into machine code:
 ```cpp
 Builder.CreateCompileFunction = [](JITTargetMachineBuilder JTMB)
     -> Expected<std::unique_ptr<IRCompileLayer::IRCompiler>> {
@@ -49,7 +47,7 @@ Builder.CreateCompileFunction = [](JITTargetMachineBuilder JTMB)
 };
 ```
 
-In order to use TPDE here, we just have to wrap it in a compatible class:
+To use TPDE in this context, we need to wrap it in a class that's compatible with ORC's interface:
 ```cpp
 class TPDECompiler : public IRCompileLayer::IRCompiler {
 public:
@@ -67,7 +65,7 @@ private:
 };
 ```
 
-We instantiate TPDE with a target triple like `x86_64-pc-linux-gnu` in the constructor. It works on ELF-based systems and supports 64-bit Intel and ARM architectures (`x86_64` and `aarch64`). For now let's assume this is all we need. Let's implement the actual invocation:
+In the constructor, we initialize TPDE with a target triple (like `x86_64-pc-linux-gnu`). TPDE currently works on ELF-based systems and supports both 64-bit Intel and ARM architectures (`x86_64` and `aarch64`). For this example, that's all we need. Now let's implement the compilation logic:
 ```cpp
 Expected<std::unique_ptr<MemoryBuffer>> TPDECompiler::operator()(Module &M) {
   Buffers.push_back(std::make_unique<std::vector<uint8_t>>());
@@ -84,9 +82,9 @@ Expected<std::unique_ptr<MemoryBuffer>> TPDECompiler::operator()(Module &M) {
 }
 ```
 
-We create a new buffer `B` for the binary code and pass it to TPDE together with the module `M` we want to codegen. If TPDE fails, we bail out with an error. If it works, we wrap the result in a `MemoryBuffer` and return it. (LLVM is quite old by now and still uses `char` pointers for binary buffers. This is unfortunate due to the three-types definition of `char` [in the C Standard](https://www.open-std.org/JTC1/SC22/WG14/www/docs/n1256.pdf){:target="_blank"}, but it's hard to change these days.)
+Here's what's happening: we create a new buffer `B` to store the compiled binary code, then pass both the buffer and the module `M` to TPDE for compilation. If TPDE encounters an issue, we return an error. On success, we wrap the result in a `MemoryBuffer` and return it. (Note: LLVM still uses `char` pointers for binary buffers and the [three-way definition of `char` in the C Standard](https://www.open-std.org/JTC1/SC22/WG14/www/docs/n1256.pdf){:target="_blank"} falls on our feet sometimes, but it's difficult to change in a mature codebase like LLVM.)
 
-Et voila, for basic integration this is it! No need to patch LLVM, this works with official release versions. We can compile simple LLVM IR code already:
+And that's it for the basic integration! The beauty of this approach is that there's no need to patch LLVM — this works with official release versions. We can compile simple LLVM IR code already:
 ```llvm
 > cat 01-basic.ll 
 ; ModuleID = 'test.ll'
@@ -105,7 +103,7 @@ entry:
 }
 ```
 
-I set up a [sample project with a working demo on GitHub](https://github.com/weliveindetail/tpde-orc){:target="_blank"}. This is the output:
+I've created a [complete working demo on GitHub](https://github.com/weliveindetail/tpde-orc){:target="_blank"} that you can try out. Here's what the output looks like:
 ```
 > ./tpde-orc 01-basic.ll 
 Loaded module: 01-basic.ll
@@ -118,7 +116,7 @@ Executing custom_entry()
 Program returned: 123
 ```
 
-The code there handles a few more details that we will explore below. We can already see a 4x speedup with TPDE compared to built-in LLVM codegen:
+The code in the repo handles a few more details that we'll explore shortly. We can already see a 4x speedup with TPDE compared to built-in LLVM codegen for 100 repetitions with a large self-contained module that was generated with [csmith](https://github.com/csmith-project/csmith){:target="_blank"}:
 ```
 > ./build/tpde-orc --par 1 tpde-orc/03-csmith-tpde.ll
 ...
@@ -129,19 +127,19 @@ Compile-time was: 2200 ms
 Compile-time was: 8820 ms
 ```
 
-### LLJITBuilder has a catch
+### LLJITBuilder has a Catch
 
-The `LLJITBuilder` interface we use above obviously incorporates other LLVM standard interfaces [including `TargetRegistry`](https://github.com/llvm/llvm-project/blob/release/20.x/llvm/lib/ExecutionEngine/Orc/JITTargetMachineBuilder.cpp#L42){:target="_blank"}. This is absolutely reasonable, but it adds an unfortunate dependency for us: It only works, if the built-in LLVM target backend is initialized! We have to call `InitializeNativeTarget()` first and thus we have to ship the LLVM backend, even though we don't need it.
+While `LLJITBuilder` is convenient, it comes with a minor trade-off. The interface incorporates standard LLVM components [including `TargetRegistry`](https://github.com/llvm/llvm-project/blob/release/20.x/llvm/lib/ExecutionEngine/Orc/JITTargetMachineBuilder.cpp#L42){:target="_blank"}, which is perfectly reasonable for most use cases. However, this creates a dependency we might not want: the built-in LLVM target backend must be initialized first via `InitializeNativeTarget()`. This means we still need to ship the LLVM backend, even though TPDE could theoretically replace it entirely.
 
-We can only avoid this issue if we set up our ORC JIT manually. If this is what you are looking for, have a look [how the `tpde-lli` tool does it](https://github.com/tpde2/tpde/blob/master/tpde-llvm/tools/tpde-lli.cpp){:target="_blank"}. Before you dive into it though, wait for the next detail!
+If you want to avoid this dependency, you'll need to set up your ORC JIT manually. For inspiration on this approach, check out [how the `tpde-lli` tool implements it](https://github.com/tpde2/tpde/blob/master/tpde-llvm/tools/tpde-lli.cpp){:target="_blank"}. Before diving into that rabbit hole though, let's explore another important aspect!
 
-### LLVM fallback
+### Implementing a LLVM Fallback
 
-One reason why TPDE is so fast and compact is that it [doesn't cover all edge cases](https://docs.tpde.org/tpde-llvm-main.html#autotoc_md91){:target="_blank"} of the LLVM instruction set. The documentation states this rule of thumb:
+One reason why TPDE is so fast and compact is that it focusses on the most common use cases rather than [covering every edge case](https://docs.tpde.org/tpde-llvm-main.html#autotoc_md91){:target="_blank"} in the LLVM instruction set. The documentation provides this guideline:
 
 > Code generated by Clang (-O0/-O1) will typically compile; -O2 and higher will typically fail due to unsupported vector operations.
 
-If your code does contain things like vector ops or non-trivial float types, then it won't compile on the TPDE fast track. It needs a fallback to LLVM. And since this is very likely, most tools will keep shipping the LLVM backend as well. The fallback is easy to implement with [CompileUtils from ORC](https://github.com/llvm/llvm-project/blob/release/20.x/llvm/include/llvm/ExecutionEngine/Orc/CompileUtils.h#L36){:target="_blank"}:
+When your code includes advanced features like vector operations or non-trivial floating-point types, TPDE won't be able to handle it. In these cases, we need a fallback to LLVM. Since this scenario is quite common in real-world applications, most tools will include both backends (and we can keep using `LLJITBuilder`). Fortunately, implementing this fallback is straightforward using [ORC's CompileUtils](https://github.com/llvm/llvm-project/blob/release/20.x/llvm/include/llvm/ExecutionEngine/Orc/CompileUtils.h#L36){:target="_blank"}:
 
 ```diff
 @@ -29,7 +29,8 @@ static cl::opt<std::string> EntryPoint("entrypoint",
@@ -177,7 +175,7 @@ If your code does contain things like vector ops or non-trivial float types, the
  int main(int argc, char *argv[]) {
 ```
 
-With this change in place, let's compile the following IR file:
+Let's test our fallback mechanism with the following IR file that uses an unsupported type:
 ```llvm
 @const_val = global bfloat 0xR4248
 
@@ -189,7 +187,7 @@ entry:
 }
 ```
 
-Command-line output will be:
+Here's what happens when we run it:
 ```terminal
 > ./tpde-orc 02-bfloat.ll
 Loaded module: 02-bfloat.ll
@@ -200,13 +198,13 @@ Executing main()
 Program returned: 50
 ```
 
-In the above patch we create a new `SimpleCompiler` instance for each fallback case. This adds some overhead, but it should be fine on the slow path anyway. We expect that the majority of jobs in our workload won't trigger the fallback. (Otherwise the TPDE backend doesn't make much sense at all). This implementation has an important side-effect that we explore in the next section: it's thread-safe!
+In this implementation, we create a new `SimpleCompiler` instance for each fallback case. While this adds some overhead, it's acceptable since we're already on the slow path. The key assumption is that most code in your workload will successfully compile with TPDE — if that's not the case, then TPDE might not be the right choice in the first place. Interestingly, this approach has a valuable side-effect that becomes important in the next section: it's inherently thread-safe!
 
-### Concurrent compilation
+### Adding Concurrent Compilation Support
 
-ORC JIT has built-in support for concurrent compilation. This is neat, but it requires attention when we customize the JIT. Our JIT has a single `TPDECompiler` instance and TPDE's `compile_to_elf()` is not thread-safe. If we enabled concurrent compilation, it would be called from multiple threads and fail.
+ORC JIT has built-in support for concurrent compilation. This is neat, but it requires attention when customizing the JIT. Our current setup uses a single `TPDECompiler` instance, but TPDE's `compile_to_elf()` method isn't thread-safe. Enabling concurrent compilation would cause multiple threads to call this method simultaneously, leading to failures.
 
-How can we fix this? We could create a new `tpde_llvm::LLVMCompiler` instance for each call to `TPDECompiler::operator()`, but it adds an overhead of `O(#jobs)` that we don't like on the fast path. Essentially, we want to avoid calling into `compile_to_elf()` while there is another call in-flight on the same instance. Making the `TPDECompiler` instance thread-local guarantees that and reduces the overhead to `O(#threads)`. It's a very simple change as well:
+How can we solve this? One option would be creating a new `tpde_llvm::LLVMCompiler` instance for each compilation job, but that but it adds an overhead of `O(#jobs)` — not ideal for our fast path. Essentially, we want to avoid calling into `compile_to_elf()` while there is another call in-flight on the same thread. We can achieve this easily by making the `TPDECompiler` instance thread-local, reducing the overhead to just `O(#threads)`. Here's the surprisingly simple change:
 
 ```diff
 @@ -32,7 +32,6 @@ public:
@@ -235,7 +233,7 @@ How can we fix this? We could create a new `tpde_llvm::LLVMCompiler` instance fo
    cl::ParseCommandLineOptions(argc, argv, "TPDE ORC JIT Compiler\n");
 ```
 
-We should also guard access to our underlying buffers:
+We also need to guard access to our underlying buffers:
 ```diff
 @@ -35,15 +35,19 @@ public:
    }
@@ -262,7 +260,7 @@ We should also guard access to our underlying buffers:
 
 ```
 
-Finally, we can switch on concurrent compilation:
+With thread safety handled, we can now enable concurrent compilation:
 ```diff
 @@ -27,6 +27,10 @@ static cl::opt<std::string> EntryPoint("entrypoint",
                                        cl::desc("Entry point function name"),
@@ -285,9 +283,9 @@ public:
    ThreadSafeModule TSM(std::move(Mod), std::move(Context));
 ```
 
-### Exercise concurrent lookup
+### Exercising Concurrent Lookup
 
-It needs a lot more support code to actually exercise concurrent compilation and do basic performance measurments. The [sample project on GitHub](https://github.com/weliveindetail/tpde-orc){:target="_blank"} has one possible implementation. Essentially, it loads a large self-contained module that I generated with [csmith](https://github.com/csmith-project/csmith){:target="_blank"} and adds 100 duplicates of it to the JIT with different entry-points. Then it issues a single JIT lookup for all the entry-points at once. A simplified version of the implementation could look like this:
+It needs a lot more support code to actually exercise concurrent compilation and do basic performance measurments. The [complete sample project on GitHub](https://github.com/weliveindetail/tpde-orc){:target="_blank"} has one possible implementation: after loading the input module, it creates 100 duplicates of it with different entry-point names and issues a single JIT lookup for all the entry-points at once. Here's a simplified version of how this works:
 ```cpp
 SymbolMap SymMap;
 SymbolLookupSet EntryPoints = addDuplicates(JIT, Mod);
@@ -309,7 +307,7 @@ auto Elapsed = duration_cast<milliseconds>(End - Start);
 outs() << "Compile-time was: " << Elapsed.count() << " ms\n";
 ```
 
-This brings compile-times of the example down from ~2200ms to ~740ms when running on up to 8 threads in parallel:
+Compile-times for our csmith example drop from ~2200ms to just ~740ms when utilizing 8 threads in parallel:
 ```
 > ./tpde-orc --par 8 tpde-orc/03-csmith-tpde.ll
 Load module: tpde-orc/03-csmith-tpde.ll
@@ -320,9 +318,9 @@ Compile-time was: 737 ms
 
 ### Et voilà!
 
-Let's take a break and look at the amount of complexity that LLVM handles in our little example! We parse a [well-defined human-readable representation](https://llvm.org/docs/LangRef.html){:target="_blank"} of turing-complete programs that can be generated from various general-purpose languages like C++, Fortran, Rust, Swift, Julia and Zig.
+Let's take a break and appreciate the remarkable complexity that LLVM effortlessly handles in our little example. We parse a [well-defined, human-readable representation](https://llvm.org/docs/LangRef.html){:target="_blank"} of Turing-complete programs that be generated from various general-purpose languages like C++, Fortran, Rust, Swift, Julia, and Zig.
 
-We add parsed modules into a composable JIT engine that identifies symbols and dependencies for us. It compiles our modules into native object code for various platforms and CPU architectures, while we can define an optimization pipeline of our choice and inject a custom code generator like TPDE. The engine then links the object code into an executable form without any platform-specific dynamic-library tricks! All of this happens in-memory and without external tools. It's really impressive that we can simply tell it to run on N threads in parallel and it just works! :)
+LLVM's composable JIT engine seamlessly manages these parsed modules, automatically resolving symbols and dependencies. It compiles to machine code on-demand for multiple platforms and CPU architectures, while giving us complete control over the optimization pipeline, code generator (like our TPDE integration) and many more components. The engine then links everything into an executable form — all in-memory and without external tools or platform-specific dynamic library tricks! It's really impressive that we can simply enable compilation on N threads in parallel and have it "just work" :)
 
-Given that serious amount of complexity, one can imagine that there are some rabbit holes left to explore. I leave one open as an exercise to the interested reader: The [current implementation of ORC's `DynamicThreadPoolTaskDispatcher`](https://github.com/llvm/llvm-project/blob/release/20.x/llvm/lib/ExecutionEngine/Orc/TaskDispatch.cpp#L67){:target="_blank"} spawns a new thread for each job and doesn't reuse them. For our example this means `#threads == #jobs`, so we are back to `O(#jobs)` overhead with our thread-local `tpde_llvm::LLVMCompiler`. Maybe we can make a task dispatcher with an actual thread-pool for this purpose? If that sounds interesting and you make a pull-request, [ping me](https://github.com/weliveindetail){:target="_blank"} and I am happy to review it!
+Given this level of sophistication, one can imagine that there are some rabbit holes left to explore. Here's an interesting challenge for the curious reader: ORC's [current `DynamicThreadPoolTaskDispatcher`](https://github.com/llvm/llvm-project/blob/release/20.x/llvm/lib/ExecutionEngine/Orc/TaskDispatch.cpp#L67){:target="_blank"} spawns a new thread for each compilation job rather than reusing them. In our setup, this means `#threads == #jobs`, which brings us back to `O(#jobs)` overhead with our thread-local `tpde_llvm::LLVMCompiler`. An implementation that uses an actual thread-pool would be great. If you're interested in tackling this optimization, feel free to [reach out](https://github.com/weliveindetail){:target="_blank"} — I'd be happy to review any pull requests! Happy coding.
 
